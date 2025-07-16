@@ -39,7 +39,7 @@ The APK will be available at `build/app/outputs/flutter-apk/app-release.apk`
 
 ## Download APK
 
-You can download the latest release APK from [Google Drive](https://drive.google.com/drive/folders/1s6XySR93zOpPwTwQ87BcNF3Szw1KpnaT)
+You can download the latest release APK from [Google Drive](https://drive.google.com/file/d/1G-F09IH4FMKpClsmzkXlBzo4KI-YQSIh/view)
 
 > Note: After uploading to Google Drive, replace the link above with your actual Google Drive sharing link
 
