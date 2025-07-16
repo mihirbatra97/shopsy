@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'controllers/product_controller.dart';
-import 'controllers/cart_controller.dart';
 import 'routes/app_routes.dart';
 import 'utils/app_theme.dart';
+import 'di/dependency_injection.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize controllers
-  Get.put(ProductController());
-  Get.put(CartController());
+  // Initialize dependencies
+  DependencyInjection.init();
   
   runApp(const MyApp());
 }

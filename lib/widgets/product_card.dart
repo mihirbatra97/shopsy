@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/cart_controller.dart';
+import '../viewmodels/cart_view_model.dart';
 import '../routes/app_routes.dart';
 import '../utils/app_theme.dart';
 import 'delayed_image.dart';
@@ -9,17 +9,16 @@ import 'quantity_controls.dart';
 
 class ProductCard extends StatelessWidget {
   final dynamic product;
-  final CartController cartController;
+  final CartViewModel cartViewModel;
   final Function(dynamic)? onTap;
   final bool showBadges;
 
   const ProductCard({
-    Key? key, 
-    required this.product, 
-    required this.cartController,
+    required this.product,
+    required this.cartViewModel,
     this.onTap,
     this.showBadges = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +26,8 @@ class ProductCard extends StatelessWidget {
     final bool isTrending = product.id % 3 == 0;
 
     return GestureDetector(
-      onTap: () => onTap != null 
-          ? onTap!(product) 
+      onTap: () => onTap != null
+          ? onTap!(product)
           : Get.toNamed(AppRoutes.productDetail, arguments: product.id),
       child: Card(
         clipBehavior: Clip.antiAlias,
@@ -94,9 +93,13 @@ class ProductCard extends StatelessWidget {
               fit: BoxFit.cover,
               height: 160,
               width: double.infinity,
+              productId: product.id,
+              productName: product.name,
               minLoadingDuration: const Duration(milliseconds: 0),
-              loadingBuilder: (context, _) => UIComponents.buildShimmerEffect(160),
-              errorBuilder: (context, error, stackTrace) => UIComponents.buildImageErrorWidget(),
+              loadingBuilder: (context, _) =>
+                  UIComponents.buildShimmerEffect(160),
+              errorBuilder: (context, error, stackTrace) =>
+                  UIComponents.buildImageErrorWidget(),
             ),
           ),
           if (showBadges) _buildBadges(isOnSale, isTrending),
@@ -124,7 +127,8 @@ class ProductCard extends StatelessWidget {
               UIComponents.buildBadge(
                 text: 'TRENDING',
                 color: AppTheme.accentColor,
-                icon: const Icon(Icons.trending_up, color: Colors.white, size: 10),
+                icon: const Icon(Icons.trending_up,
+                    color: Colors.white, size: 10),
               ),
           ],
         ),
@@ -162,7 +166,7 @@ class ProductCard extends StatelessWidget {
 
   Widget _buildCartControls() {
     return Obx(() {
-      final cartItem = cartController.cartItems.firstWhereOrNull(
+      final cartItem = cartViewModel.cartItems.firstWhereOrNull(
         (item) => item.product.id == product.id,
       );
       final isInCart = cartItem != null;
@@ -170,9 +174,9 @@ class ProductCard extends StatelessWidget {
       return isInCart
           ? QuantityControls(
               quantity: cartItem.quantity,
-              onIncrease: () => cartController.increaseQuantity(product.id),
-              onDecrease: () => cartController.decreaseQuantity(product.id),
-              onRemove: () => cartController.removeFromCart(product.id),
+              onIncrease: () => cartViewModel.increaseQuantity(product.id),
+              onDecrease: () => cartViewModel.decreaseQuantity(product.id),
+              onRemove: () => cartViewModel.removeFromCart(product.id),
               compact: true,
             )
           : _buildAddToCartButton();
@@ -186,7 +190,7 @@ class ProductCard extends StatelessWidget {
       child: ElevatedButton(
         onPressed: () {
           // Add with animation
-          cartController.addToCart(product);
+          cartViewModel.addToCart(product);
 
           // Show a nice snackbar
           Get.snackbar(
@@ -223,6 +227,4 @@ class ProductCard extends StatelessWidget {
       ),
     );
   }
-
-
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/cart_controller.dart';
-import '../controllers/product_controller.dart';
+import '../viewmodels/cart_view_model.dart';
+import '../viewmodels/product_view_model.dart';
 import '../utils/app_theme.dart';
 import '../widgets/product_card.dart';
 
@@ -198,17 +198,58 @@ class ProductListComponents {
     );
   }
 
+  /// Builds an error state for displaying issues with data loading
+  static Widget buildErrorState({
+    required String message,
+    required VoidCallback onRetry,
+  }) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 80, color: Colors.red[300]),
+          const SizedBox(height: 16),
+          Text(
+            'Something went wrong',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: TextStyle(color: Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Try Again'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Builds the product grid with filtering based on search query
   static Widget buildProductGrid({
     required BuildContext context,
-    required ProductController productController,
-    required CartController cartController,
+    required ProductViewModel productViewModel,
+    required CartViewModel cartViewModel,
     required String searchQuery,
   }) {
     // Filter products based on search query
     final filteredProducts = searchQuery.isEmpty
-        ? productController.productList
-        : productController.productList.where((product) {
+        ? productViewModel.products
+        : productViewModel.products.where((product) {
             return product.name.toLowerCase().contains(searchQuery) ||
                 product.category.toLowerCase().contains(searchQuery) ||
                 product.description.toLowerCase().contains(searchQuery);
@@ -229,13 +270,13 @@ class ProductListComponents {
       itemCount: filteredProducts.length,
       itemBuilder: (context, index) {
         final product = filteredProducts[index];
-        return ProductCard(product: product, cartController: cartController);
+        return ProductCard(product: product, cartViewModel: cartViewModel);
       },
     );
   }
 
   /// Builds the cart button with badge showing item count
-  static Widget buildCartButton(CartController cartController, VoidCallback onPressed) {
+  static Widget buildCartButton(CartViewModel cartViewModel, VoidCallback onPressed) {
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -251,7 +292,7 @@ class ProductListComponents {
           top: 5,
           right: 5,
           child: Obx(
-            () => cartController.cartItems.isEmpty
+            () => cartViewModel.cartItems.isEmpty
                 ? const SizedBox.shrink()
                 : Container(
                     padding: const EdgeInsets.all(4),
@@ -270,7 +311,7 @@ class ProductListComponents {
                         const BoxConstraints(minWidth: 18, minHeight: 18),
                     child: Center(
                       child: Text(
-                        '${cartController.itemCount}',
+                        '${cartViewModel.itemCount}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,

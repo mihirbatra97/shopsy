@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/cart_controller.dart';
+import '../viewmodels/cart_view_model.dart';
 import '../utils/app_theme.dart';
 
 class CartScreen extends StatelessWidget {
@@ -8,7 +8,7 @@ class CartScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final CartController cartController = Get.find<CartController>();
+    final CartViewModel cartViewModel = Get.find<CartViewModel>();
 
     return Scaffold(
       appBar: AppBar(
@@ -21,7 +21,7 @@ class CartScreen extends StatelessWidget {
         ),
         elevation: 0,
         actions: [
-          Obx(() => cartController.cartItems.isNotEmpty
+          Obx(() => cartViewModel.cartItems.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.delete_outline),
                   tooltip: 'Clear cart',
@@ -33,7 +33,7 @@ class CartScreen extends StatelessWidget {
                       textCancel: 'No',
                       confirmTextColor: Colors.white,
                       onConfirm: () {
-                        cartController.clearCart();
+                        cartViewModel.clearCart();
                         Get.back();
                       },
                     );
@@ -44,7 +44,7 @@ class CartScreen extends StatelessWidget {
         ],
       ),
       body: Obx(() {
-        if (cartController.cartItems.isEmpty) {
+        if (cartViewModel.cartItems.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -113,9 +113,9 @@ class CartScreen extends StatelessWidget {
           children: [
             Expanded(
               child: ListView.builder(
-                itemCount: cartController.cartItems.length,
+                itemCount: cartViewModel.cartItems.length,
                 itemBuilder: (context, index) {
-                  final cartItem = cartController.cartItems[index];
+                  final cartItem = cartViewModel.cartItems[index];
                   return Dismissible(
                     key: Key(cartItem.product.id.toString()),
                     direction: DismissDirection.endToStart,
@@ -129,7 +129,7 @@ class CartScreen extends StatelessWidget {
                       ),
                     ),
                     onDismissed: (_) {
-                      cartController.removeFromCart(cartItem.product.id);
+                      cartViewModel.removeFromCart(cartItem.product.id);
                     },
                     child: Card(
                       margin: const EdgeInsets.symmetric(
@@ -220,7 +220,7 @@ class CartScreen extends StatelessWidget {
                                           ? AppTheme.primaryColor 
                                           : AppTheme.errorColor,
                                     ),
-                                    onPressed: () => cartController.decreaseQuantity(
+                                    onPressed: () => cartViewModel.decreaseQuantity(
                                       cartItem.product.id,
                                     ),
                                   ),
@@ -240,7 +240,7 @@ class CartScreen extends StatelessWidget {
                                       Icons.add,
                                       color: AppTheme.primaryColor,
                                     ),
-                                    onPressed: () => cartController.increaseQuantity(
+                                    onPressed: () => cartViewModel.increaseQuantity(
                                       cartItem.product.id,
                                     ),
                                   ),
@@ -281,7 +281,7 @@ class CartScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '₹${cartController.totalPrice.toStringAsFixed(2)}',
+                        '₹${cartViewModel.totalPrice.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -306,7 +306,7 @@ class CartScreen extends StatelessWidget {
                           margin: const EdgeInsets.all(16),
                           icon: const Icon(Icons.check_circle, color: Colors.white),
                         );
-                        cartController.clearCart();
+                        cartViewModel.clearCart();
                         Future.delayed(const Duration(seconds: 1), () {
                           Get.offAllNamed('/');
                         });

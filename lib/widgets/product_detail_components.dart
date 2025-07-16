@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/cart_controller.dart';
-import '../controllers/product_controller.dart';
+import '../viewmodels/cart_view_model.dart';
+import '../viewmodels/product_view_model.dart';
 import '../models/product_model.dart';
 import '../routes/app_routes.dart';
 import '../utils/app_theme.dart';
 import 'ui_components.dart';
 import '../widgets/quantity_controls.dart';
+import '../widgets/delayed_image.dart';
 
 /// Contains reusable components specifically for the product detail screen
 /// Helper methods for product detail screen
@@ -18,6 +19,9 @@ class ProductDetailComponents {
     required ImageLoadingBuilder loadingBuilder,
     required ImageErrorWidgetBuilder errorBuilder,
   }) {
+    // Use a default product name since we can't await here
+    const String productName = 'Product';
+    
     return Hero(
       tag: 'product-$productId',
       child: SizedBox(
@@ -26,13 +30,16 @@ class ProductDetailComponents {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              imageUrl,
+            DelayedImage(
+              imageUrl: imageUrl,
               fit: BoxFit.cover,
               height: 300,
               width: double.infinity,
-              loadingBuilder: loadingBuilder,
-              errorBuilder: errorBuilder,
+              productId: productId,
+              productName: productName,
+              minLoadingDuration: const Duration(milliseconds: 0),
+              loadingBuilder: (context, _) => UIComponents.buildShimmerEffect(300),
+              errorBuilder: (context, error, stackTrace) => UIComponents.buildImageErrorWidget(),
             ),
             // Gradient overlay for better text visibility
             UIComponents.buildGradientOverlay(
@@ -255,9 +262,9 @@ class ProductDetailComponents {
   static Widget buildSpecificationItem(String title, String value) {
     return UIComponents.buildSpecItem(title, value);
   }
-  
-  /// Builds the app bar with transparent background and cart button
-  static PreferredSizeWidget buildAppBar(String title, CartController cartController) {
+
+  /// Builds the app bar for product detail screen with cart button
+  static PreferredSizeWidget buildAppBar(String title, CartViewModel cartViewModel) {
     return AppBar(
       title: Text(
         title,
@@ -268,51 +275,52 @@ class ProductDetailComponents {
       backgroundColor: Colors.transparent,
       elevation: 0,
       iconTheme: const IconThemeData(color: Colors.white),
-      actions: [buildCartButton(cartController)],
+      actions: [buildCartButton(cartViewModel)],
     );
   }
-  
+
   /// Builds the cart button with badge showing item count
-  static Widget buildCartButton(CartController cartController) {
+  static Widget buildCartButton(CartViewModel cartViewModel) {
     return Stack(
       alignment: Alignment.center,
       children: [
         IconButton(
-          icon: const Icon(Icons.shopping_cart),
+          icon: const Icon(Icons.shopping_cart, color: Colors.black87),
           onPressed: () => Get.toNamed(AppRoutes.cart),
         ),
-        Positioned(
-          top: 5,
-          right: 5,
-          child: Obx(
-            () => cartController.cartItems.isEmpty
-                ? const SizedBox.shrink()
-                : Container(
+        cartViewModel.cartItems.isNotEmpty
+            ? Positioned(
+                top: 5,
+                right: 5,
+                child: Obx(
+                  () => Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
                       color: AppTheme.accentColor,
                       shape: BoxShape.circle,
                     ),
-                    constraints:
-                        const BoxConstraints(minWidth: 18, minHeight: 18),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
                     child: Center(
                       child: Text(
-                        '${cartController.itemCount}',
+                        '${cartViewModel.itemCount}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),
-          ),
-        ),
+                ),
+              )
+            : const SizedBox.shrink(),
       ],
     );
   }
-  
+
   /// Helper method to get month name from month number
   static String getMonth(int month) {
     const months = [
@@ -321,10 +329,10 @@ class ProductDetailComponents {
     ];
     return months[month - 1];
   }
-  
-  /// Builds the bottom action bar with quantity controls and add to cart button
+
+  /// Builds the bottom action bar with add to cart button
   static Widget buildBottomActionBar({
-    required CartController cartController,
+    required CartViewModel cartViewModel,
     required int productId,
     required String productName,
     required double price,
@@ -346,12 +354,12 @@ class ProductDetailComponents {
         children: [
           // Quantity controls
           Obx(() {
-            final int quantity = _getItemQuantity(cartController, productId);
+            final int quantity = _getItemQuantity(cartViewModel, productId);
             return QuantityControls(
               quantity: quantity,
-              onIncrease: () => cartController.increaseQuantity(productId),
-              onDecrease: () => cartController.decreaseQuantity(productId),
-              onRemove: () => cartController.removeFromCart(productId),
+              onIncrease: () => cartViewModel.increaseQuantity(productId),
+              onDecrease: () => cartViewModel.decreaseQuantity(productId),
+              onRemove: () => cartViewModel.removeFromCart(productId),
               compact: false,
             );
           }),
@@ -359,15 +367,20 @@ class ProductDetailComponents {
           // Add to cart button
           Expanded(
             child: Obx(() {
-              final bool isInCart = _isProductInCart(cartController, productId);
+              final bool isInCart = _isProductInCart(cartViewModel, productId);
               return ElevatedButton.icon(
-                onPressed: () {
+                onPressed: () async {
                   if (!isInCart) {
-                    // Get the product from the controller
-                    final product = _findProductById(productId);
-                    if (product != null) {
-                      cartController.addToCart(product);
-                    }
+                    // Since we already have all product info, just create a new Product directly
+                    final product = Product(
+                      id: productId,
+                      name: productName,
+                      price: price,
+                      imageUrl: imageUrl,
+                      description: '', // These fields aren't used for cart display
+                      category: '',
+                    );
+                    cartViewModel.addToCart(product);
                   } else {
                     Get.toNamed(AppRoutes.cart);
                   }
@@ -393,19 +406,19 @@ class ProductDetailComponents {
   }
   
   /// Helper method to check if a product is in the cart
-  static bool _isProductInCart(CartController cartController, int productId) {
-    return cartController.cartItems.any((item) => item.product.id == productId);
+  static bool _isProductInCart(CartViewModel cartViewModel, int productId) {
+    return cartViewModel.cartItems.any((item) => item.product.id == productId);
   }
   
   /// Helper method to get the quantity of an item in the cart
-  static int _getItemQuantity(CartController cartController, int productId) {
-    final index = cartController.cartItems.indexWhere((item) => item.product.id == productId);
-    return index >= 0 ? cartController.cartItems[index].quantity : 0;
+  static int _getItemQuantity(CartViewModel cartViewModel, int productId) {
+    final index = cartViewModel.cartItems.indexWhere((item) => item.product.id == productId);
+    return index >= 0 ? cartViewModel.cartItems[index].quantity : 0;
   }
   
   /// Helper method to find a product by ID
-  static Product? _findProductById(int productId) {
-    final productController = Get.find<ProductController>();
-    return productController.findProductById(productId);
+  static Future<Product?> _findProductById(int productId) async {
+    final productViewModel = Get.find<ProductViewModel>();
+    return await productViewModel.findProductById(productId);
   }
 }

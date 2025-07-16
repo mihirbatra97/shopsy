@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../controllers/product_controller.dart';
-import '../controllers/cart_controller.dart';
+import '../viewmodels/product_view_model.dart';
+import '../viewmodels/cart_view_model.dart';
 import '../routes/app_routes.dart';
 import '../utils/app_theme.dart';
 import '../widgets/product_list_components.dart';
@@ -70,8 +70,8 @@ class _ProductListScreenState extends State<ProductListScreen> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    final ProductController productController = Get.find<ProductController>();
-    final CartController cartController = Get.find<CartController>();
+    final ProductViewModel productViewModel = Get.find<ProductViewModel>();
+    final CartViewModel cartViewModel = Get.find<CartViewModel>();
 
     return Scaffold(
       body: NestedScrollView(
@@ -119,7 +119,7 @@ class _ProductListScreenState extends State<ProductListScreen> with SingleTicker
                 onPressed: _toggleSearch,
               ),
               ProductListComponents.buildCartButton(
-                cartController,
+                cartViewModel,
                 () => Get.toNamed(AppRoutes.cart),
               ),
               const SizedBox(width: 8),
@@ -127,18 +127,25 @@ class _ProductListScreenState extends State<ProductListScreen> with SingleTicker
           ),
         ],
         body: Obx(() {
-          if (productController.isLoading.value) {
+          if (productViewModel.isLoading.value) {
             return ProductListComponents.buildLoadingState();
           }
+          
+          if (productViewModel.hasError.value) {
+            return ProductListComponents.buildErrorState(
+              message: productViewModel.errorMessage.value,
+              onRetry: () => productViewModel.retryLoading()
+            );
+          }
 
-          if (productController.productList.isEmpty) {
+          if (productViewModel.products.isEmpty) {
             return ProductListComponents.buildEmptyState();
           }
 
           return ProductListComponents.buildProductGrid(
             context: context,
-            productController: productController,
-            cartController: cartController,
+            productViewModel: productViewModel,
+            cartViewModel: cartViewModel,
             searchQuery: _searchQuery,
           );
         }),

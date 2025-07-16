@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../utils/placeholder_image.dart';
 
 /// A widget that guarantees showing shimmer for at least 200ms before displaying the image
 class DelayedImage extends StatefulWidget {
@@ -10,17 +11,21 @@ class DelayedImage extends StatefulWidget {
   final Duration minLoadingDuration;
   final Widget Function(BuildContext, Widget?) loadingBuilder;
   final Widget Function(BuildContext, Object, StackTrace?) errorBuilder;
+  final int productId; // Added product ID for placeholder generation
+  final String productName; // Added product name for placeholder generation
 
   const DelayedImage({
-    Key? key,
     required this.imageUrl,
     required this.height,
     required this.width,
     required this.fit,
     required this.loadingBuilder,
     required this.errorBuilder,
-    this.minLoadingDuration = const Duration(milliseconds: 200), // Default to 200ms
-  }) : super(key: key);
+    required this.productId,
+    required this.productName,
+    this.minLoadingDuration =
+        const Duration(milliseconds: 200), // Default to 200ms
+  });
 
   @override
   State<DelayedImage> createState() => _DelayedImageState();
@@ -30,8 +35,6 @@ class _DelayedImageState extends State<DelayedImage> {
   bool _showImage = false;
   bool _imageLoaded = false;
   bool _hasError = false;
-  Object? _error;
-  StackTrace? _stackTrace;
   Timer? _minLoadingTimer;
 
   @override
@@ -46,18 +49,18 @@ class _DelayedImageState extends State<DelayedImage> {
       }
     });
   }
-  
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Pre-load the image after dependencies are available
     _loadImage();
   }
-  
+
   void _loadImage() {
     // Create image provider
     final imageProvider = NetworkImage(widget.imageUrl);
-    
+
     // Load the image
     final ImageStream stream = imageProvider.resolve(ImageConfiguration.empty);
     final listener = ImageStreamListener(
@@ -75,13 +78,11 @@ class _DelayedImageState extends State<DelayedImage> {
         if (mounted) {
           setState(() {
             _hasError = true;
-            _error = error;
-            _stackTrace = stackTrace;
           });
         }
       },
     );
-    
+
     stream.addListener(listener);
   }
 
@@ -95,7 +96,14 @@ class _DelayedImageState extends State<DelayedImage> {
   Widget build(BuildContext context) {
     // Show error state if there was an error loading the image
     if (_hasError) {
-      return widget.errorBuilder(context, _error!, _stackTrace);
+      // Use the placeholder image instead of the default error builder
+      return PlaceholderImage.buildPlaceholder(
+        productName: widget.productName,
+        productId: widget.productId,
+        width: widget.width,
+        height: widget.height,
+        fit: widget.fit,
+      );
     }
 
     // Show shimmer while loading or during minimum duration
@@ -105,12 +113,20 @@ class _DelayedImageState extends State<DelayedImage> {
 
     // Show the actual image once loaded and minimum duration passed
     return Image.network(
-      widget.imageUrl,
+      // Use the placeholder image utility to get a reliable image URL
+      PlaceholderImage.getImageUrl(widget.imageUrl, widget.productId),
       height: widget.height,
       width: widget.width,
       fit: widget.fit,
       // No need for loading builder as we handle that separately
-      errorBuilder: widget.errorBuilder,
+      errorBuilder: (context, error, stackTrace) =>
+          PlaceholderImage.buildPlaceholder(
+        productName: widget.productName,
+        productId: widget.productId,
+        width: widget.width,
+        height: widget.height,
+        fit: widget.fit,
+      ),
     );
   }
 }
