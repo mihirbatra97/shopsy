@@ -7,16 +7,16 @@ class ProductRepository {
   /// Fetches products from the local JSON file
   Future<List<Product>> getProducts() async {
     try {
-      final String response = await rootBundle.loadString('assets/products.json');
+      final String response =
+          await rootBundle.loadString('assets/products.json');
       final List<dynamic> data = json.decode(response);
       return data.map((item) => Product.fromJson(item)).toList();
     } catch (e) {
       // Log error and rethrow for handling in view model
-      print('Error loading products: $e');
       throw Exception('Failed to load products');
     }
   }
-  
+
   /// Finds a product by ID by loading all products and then finding by ID
   /// Returns null if product is not found
   Future<Product?> getProductById(int id) async {
@@ -25,7 +25,6 @@ class ProductRepository {
       final products = await getProducts();
       return products.firstWhere((product) => product.id == id);
     } catch (e) {
-      print('Product with id $id not found: $e');
       return null;
     }
   }
